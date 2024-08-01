@@ -20,14 +20,14 @@
       </el-input>
       <!-- 左中间：对话列表 -->
       <div class="conversation-list" :style="{ height: leftHeight + 'px' }">
-        <el-row v-for="conversation in conversationList" :key="conversation.id">
+        <el-row v-for="(conversation,index) in conversationList" :key="index">
           <div
             :class="conversation.id === conversationId ? 'conversation active' : 'conversation'"
             @click="changeConversation(conversation)"
           >
-            <el-image :src="conversation.avatar" class="avatar" />
-            <span class="title">{{ conversation.title }}</span>
-            <span class="button">
+            <!-- <el-image :src="conversation.avatar" class="avatar" /> -->
+            <div class="topic">{{ conversation.id }}：：{{ conversation.topic }}</div>
+            <div class="button">
               <!-- TODO 芋艿：缺置顶按钮 -->
               <el-icon title="编辑" @click="updateConversationTitle(conversation)">
                 <Icon icon="ep:edit" />
@@ -35,14 +35,14 @@
               <el-icon title="删除会话" @click="deleteConversationTitle(conversation)">
                 <Icon icon="ep:delete" />
               </el-icon>
-            </span>
+            </div>
           </div>
         </el-row>
       </div>
       <!-- 左底部：工具栏 TODO 芋艿：50% 不太对 -->
       <div class="tool-box">
-        <sapn class="w-1/2"> <Icon icon="ep:user" /> 角色仓库 </sapn>
-        <sapn class="w-1/2"> <Icon icon="ep:delete" />清空未置顶对话</sapn>
+        <span class="w-1/2"> <Icon icon="ep:user" /> 角色仓库 </span>
+        <span class="w-1/2"> <Icon icon="ep:delete" />清空未置顶对话</span>
       </div>
     </el-aside>
     <!-- 右侧：会话详情 -->
@@ -87,6 +87,8 @@
 <script setup lang="ts">
 import avatar from '@/assets/imgs/avatar.gif'
 import ChatMessage from './chatMessage.vue';
+import * as UserConversationApi from '@/api/system/ai'
+import { toRaw } from 'vue';
 
 // const chatHistory = ref([])
 const messages = ref([
@@ -97,18 +99,18 @@ const messages = ref([
   { id: 5, text: 'Goodbye', isUser: true }
 ])
 
-const conversationList = [
-  {
-    id: 1,
-    title: '历史对话1',
-    avatar: avatar
-  },
-  {
-    id: 2,
-    title: '历史对话2',
-    avatar: avatar
-  }
-]
+// tableObject：表格的属性对象，可获得分页大小、条数等属性
+// tableMethods：表格的操作对象，可进行获得分页、删除记录等操作
+// 详细可见：https://doc.iocoder.cn/vue3/crud-schema/
+const { tableObject, tableMethods } = useTable({
+  getListApi: UserConversationApi.getUserConversationPage, // 分页接口
+  delListApi: UserConversationApi.deleteUserConversation // 删除接口
+})
+// 获得表格的各种操作
+const { getList, setSearchParams } = tableMethods
+
+const conversationList = ref<UserConversationApi.UserConversationVO[]>([]) // 用户列表
+
 const conversationId = ref(1)
 const newMessage = ref('')
 const searchName = ref('')
@@ -137,10 +139,15 @@ const sendMessage = () => {
   if (newMessage.value.trim() === '') {
     return
   }
-  messages.value.push({ id: messages.value.length + 1, text: newMessage.value, isUser: true })
+  messages.value.push({ id: messages.value.length + 1, text: messages.value, isUser: true })
   newMessage.value = ''
 }
+onMounted(async () => {
+  await getList()
+  const conversations = await UserConversationApi.getUserConversationPage(null)
+  conversationList.value = conversations.list
 
+})
 </script>
 <style lang="scss" scoped>
 .conversation-container {
@@ -151,6 +158,7 @@ const sendMessage = () => {
       width: 100%;
       padding: 5px 5px 0 0;
       cursor: pointer;
+      color: #000;
       &.active {
         // TODO 芋艿：这里不太对
         background-color: #343540;
@@ -158,7 +166,7 @@ const sendMessage = () => {
           display: inline;
         }
       }
-      .title {
+      .topic {
         padding: 5px 10px;
         max-width: 220px;
         font-size: 14px;
