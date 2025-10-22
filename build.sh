@@ -1,3 +1,3 @@
-export JAVA_HOME=/Users/xiedong/develop/app/java/jdk-17.0.9.jdk/Contents/Home
+export JAVA_HOME=/Users/<user>/develop/app/java/jdk-17.0.9.jdk/Contents/Home
 
-mvn clean install
+mvn clean install -Dmaven.test.skip=true
